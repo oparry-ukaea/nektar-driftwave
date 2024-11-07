@@ -4,7 +4,7 @@
 # Helper functions
 echo_usage() {
     echo "Usage:"
-    echo "    $0 [solver_name] [example_name] <-n num_MPI> <-b build_dir>"
+    echo "    $0 [example_name] <-n num_MPI> <-b build_dir>"
 }
 
 execute() {
