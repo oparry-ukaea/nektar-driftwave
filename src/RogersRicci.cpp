@@ -129,19 +129,12 @@ void RogersRicci::v_InitObject(bool DeclareField)
                 m_traceVn = Array<OneD, NekDouble>(GetTraceNpoints());
             }
 
-            std::string advName, riemName;
-            m_session->LoadSolverInfo("AdvectionType", advName, "WeakDG");
-            advObj_vdrift = SolverUtils::GetAdvectionFactory().CreateInstance(
-                advName, advName);
-            advObj_vdrift->SetFluxVector(&RogersRicci::GetFluxVector, this);
-
-            m_riemannSolver = std::make_shared<UpwindNeumannSolver>(m_session);
-            m_riemannSolver->SetScalar("Vn", &RogersRicci::GetNormalVelocity,
-                                       this);
-
-            // Tell the advection object about the Riemann solver to use, and
-            // then get it set up.
-            advObj_vdrift->SetRiemannSolver(m_riemannSolver);
+            // Advection and Riemann solver for drift velocity
+            init_advection_obj(m_session, m_drift_riemannSolver, advObj_vdrift);
+            advObj_vdrift->SetFluxVector(&RogersRicci::GetDriftFluxVector,
+                                         this);
+            m_drift_riemannSolver->SetScalar(
+                "Vn", &RogersRicci::GetDriftNormalVelocity, this);
             advObj_vdrift->InitObject(m_session, m_fields);
             break;
         }
@@ -184,48 +177,6 @@ void RogersRicci::v_InitObject(bool DeclareField)
     {
         m_r[i] = sqrt(x[i] * x[i] + y[i] * y[i]);
     }
-
-    // Figure out Neumann quadrature in trace
-    const Array<OneD, const int> &traceBndMap = m_fields[0]->GetTraceBndMap();
-    std::set<std::size_t> neumannIdx;
-    for (size_t n = 0, cnt = 0;
-         n < (size_t)m_fields[0]->GetBndConditions().size(); ++n)
-    {
-        if (m_fields[0]->GetBndConditions()[n]->GetBoundaryConditionType() ==
-            SpatialDomains::ePeriodic)
-        {
-            continue;
-        }
-
-        int nExp = m_fields[0]->GetBndCondExpansions()[n]->GetExpSize();
-
-        if (m_fields[0]->GetBndConditions()[n]->GetBoundaryConditionType() !=
-            SpatialDomains::eNeumann)
-        {
-            cnt += nExp;
-            continue;
-        }
-
-        for (int e = 0; e < nExp; ++e)
-        {
-            auto nBCEdgePts = m_fields[0]
-                                  ->GetBndCondExpansions()[n]
-                                  ->GetExp(e)
-                                  ->GetTotPoints();
-
-            auto id =
-                m_fields[0]->GetTrace()->GetPhys_Offset(traceBndMap[cnt + e]);
-            for (int q = 0; q < nBCEdgePts; ++q)
-            {
-                neumannIdx.insert(id + q);
-            }
-        }
-
-        cnt += nExp;
-    }
-
-    std::dynamic_pointer_cast<UpwindNeumannSolver>(m_riemannSolver)
-        ->SetNeumannIdx(neumannIdx);
 
     // Set up user-defined boundary conditions, if any were specified
     for (int ifld = 0; ifld < m_fields.size(); ifld++)
@@ -276,52 +227,22 @@ void RogersRicci::DoOdeProjection(
 }
 
 /**
- * @brief Compute the flux vector for this system.
+ * @brief Compute the flux vector for drift velocity advection.
  */
-void RogersRicci::GetFluxVector(
+void RogersRicci::GetDriftFluxVector(
     const Array<OneD, Array<OneD, NekDouble>> &physfield,
     Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux)
 {
-    ASSERTL1(flux[0].size() == m_driftVel.size(),
-             "Dimension of flux array and velocity array do not match");
-
-    int nq = physfield[0].size();
-
-    for (int i = 0; i < flux.size(); ++i)
-    {
-        for (int j = 0; j < flux[0].size(); ++j)
-        {
-            Vmath::Vmul(nq, physfield[i], 1, m_driftVel[j], 1, flux[i][j], 1);
-        }
-    }
+    get_flux_vector(physfield, flux, m_driftVel);
 }
 
 /**
- * @brief Compute the normal advection velocity for this system on the
+ * @brief Compute the normal drift velocities on the
  * trace/skeleton/edges of the mesh.
  */
-Array<OneD, NekDouble> &RogersRicci::GetNormalVelocity()
+Array<OneD, NekDouble> &RogersRicci::GetDriftNormalVelocity()
 {
-    // Number of trace (interface) points
-    int nTracePts = GetTraceNpoints();
-
-    // Auxiliary variable to compute the normal velocity
-    Array<OneD, NekDouble> tmp(nTracePts);
-
-    // Reset the normal velocity
-    Vmath::Zero(nTracePts, m_traceVn, 1);
-
-    // Compute dot product of velocity along trace with trace normals. Store in
-    // m_traceVn.
-    for (int i = 0; i < m_ndims; ++i)
-    {
-        m_fields[0]->ExtractTracePhys(m_driftVel[i], tmp);
-
-        Vmath::Vvtvp(nTracePts, m_traceNormals[i], 1, tmp, 1, m_traceVn, 1,
-                     m_traceVn, 1);
-    }
-
-    return m_traceVn;
+    return get_norm_vels(m_traceVn, m_driftVel, m_traceNormals, m_fields);
 }
 
 void RogersRicci::set_int_idx(const int &idx, int &int_idx)
@@ -348,6 +269,74 @@ void check_var_idx(const LibUtilities::SessionReaderSharedPtr session,
     err << "Expected variable index " << idx << " to correspond to '"
         << var_name << "'. Check your session file.";
     ASSERTL0(session->GetVariable(idx).compare(var_name) == 0, err.str());
+}
+
+Array<OneD, NekDouble> &get_norm_vels(
+    Array<OneD, NekDouble> &trace_norm_vels,
+    const Array<OneD, Array<OneD, NekDouble>> &adv_vels,
+    const Array<OneD, Array<OneD, NekDouble>> &trace_norms,
+    const Array<OneD, MultiRegions::ExpListSharedPtr> &fields)
+{
+    // Number of trace (interface) points
+    int nTracePts = trace_norm_vels.size();
+
+    ASSERTL0(
+        adv_vels.size() >= trace_norms.size(),
+        "Velocity array dimension is less than trace_norms array dimension");
+
+    ASSERTL0(trace_norms[0].size() == nTracePts,
+             "trace_norms array and trace_norm_vels have different number of "
+             "points");
+
+    // Auxiliary variable to compute the normal velocity
+    Array<OneD, NekDouble> tmp(nTracePts);
+
+    // Reset the normal velocity
+    Vmath::Zero(nTracePts, trace_norm_vels, 1);
+
+    // Compute dot product of velocity along trace with trace normals. Store in
+    // trace_norm_vels.
+    for (int i = 0; i < trace_norms.size(); ++i)
+    {
+        fields[0]->ExtractTracePhys(adv_vels[i], tmp);
+
+        Vmath::Vvtvp(nTracePts, trace_norms[i], 1, tmp, 1, trace_norm_vels, 1,
+                     trace_norm_vels, 1);
+    }
+
+    return trace_norm_vels;
+}
+
+void get_flux_vector(const Array<OneD, Array<OneD, NekDouble>> &physfield,
+                     Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux,
+                     const Array<OneD, Array<OneD, NekDouble>> &adv_vels)
+{
+    ASSERTL0(adv_vels.size() >= flux[0].size(),
+             "Velocity array dimension is less than flux array dimension");
+
+    int nq = physfield[0].size();
+
+    for (int i = 0; i < flux.size(); ++i)
+    {
+        for (int j = 0; j < flux[0].size(); ++j)
+        {
+            Vmath::Vmul(nq, physfield[i], 1, adv_vels[j], 1, flux[i][j], 1);
+        }
+    }
+}
+
+void init_advection_obj(LibUtilities::SessionReaderSharedPtr session,
+                        RiemannSolverSharedPtr &riemannSolver,
+                        SolverUtils::AdvectionSharedPtr &advObj)
+{
+    std::string advName, riemName;
+    session->LoadSolverInfo("AdvectionType", advName, "WeakDG");
+    session->LoadSolverInfo("UpwindType", riemName, "Upwind");
+    advObj =
+        SolverUtils::GetAdvectionFactory().CreateInstance(advName, advName);
+    riemannSolver = SolverUtils::GetRiemannSolverFactory().CreateInstance(
+        riemName, session);
+    advObj->SetRiemannSolver(riemannSolver);
 }
 
 } // namespace Nektar

@@ -63,11 +63,11 @@ public:
     virtual void DoOdeProjection(
         const Array<OneD, const Array<OneD, NekDouble>> &inarray,
         Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time);
-    virtual void GetFluxVector(
+    virtual void GetDriftFluxVector(
         const Array<OneD, Array<OneD, NekDouble>> &physfield,
         Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux);
 
-    Array<OneD, NekDouble> &GetNormalVelocity();
+    Array<OneD, NekDouble> &GetDriftNormalVelocity();
 
 protected:
     /// Helper function to define constants.
@@ -94,7 +94,7 @@ protected:
     Array<OneD, NekDouble> m_traceVn;
     /// A Riemann solver object to solve numerical fluxes arising from DG: in
     /// this case a simple upwind.
-    RiemannSolverSharedPtr m_riemannSolver;
+    RiemannSolverSharedPtr m_drift_riemannSolver;
     /// Helper object for fully-implicit solve.
     std::shared_ptr<ImplicitHelper> m_implHelper;
 
@@ -147,6 +147,20 @@ void check_var_idx(const LibUtilities::SessionReaderSharedPtr session,
 
 void check_field_sizes(Array<OneD, MultiRegions::ExpListSharedPtr> fields,
                        const int npts);
+
+void get_flux_vector(const Array<OneD, Array<OneD, NekDouble>> &physfield,
+                     Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux,
+                     const Array<OneD, Array<OneD, NekDouble>> &adv_vels);
+
+Array<OneD, NekDouble> &get_norm_vels(
+    Array<OneD, NekDouble> &trace_norm_vels,
+    const Array<OneD, Array<OneD, NekDouble>> &adv_vels,
+    const Array<OneD, Array<OneD, NekDouble>> &trace_norms,
+    const Array<OneD, MultiRegions::ExpListSharedPtr> &fields);
+
+void init_advection_obj(LibUtilities::SessionReaderSharedPtr session,
+                        RiemannSolverSharedPtr &riemannSolver,
+                        SolverUtils::AdvectionSharedPtr &advObj);
 
 } // namespace Nektar
 
