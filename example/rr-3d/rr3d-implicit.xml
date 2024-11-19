@@ -48,16 +48,16 @@
                 <D VAR="phi" VALUE="0.03" />
             </REGION>
             <REGION REF="1">
-                <N VAR="n" VALUE="0" />`
-                <N VAR="T_e" VALUE="0" />
-                <N VAR="w"   VALUE="0" />
+                <N VAR="n" USERDEFINEDTYPE="Outflow" VALUE="0" />`
+                <N VAR="T_e" USERDEFINEDTYPE="Outflow" VALUE="0" />
+                <N VAR="w" USERDEFINEDTYPE="Outflow" VALUE="0" />
                 <D VAR="u_e" VALUE="ue_scale*(2*(z-zmin)/zsize-1)" />
                 <N VAR="phi" VALUE="0" />
             </REGION>
             <REGION REF="2">
-                <N VAR="n" VALUE="0" />
-                <N VAR="T_e" VALUE="0" />
-                <N VAR="w"   VALUE="0" />
+                <N VAR="n" USERDEFINEDTYPE="Outflow" VALUE="0" />
+                <N VAR="T_e" USERDEFINEDTYPE="Outflow" VALUE="0" />
+                <N VAR="w" USERDEFINEDTYPE="Outflow" VALUE="0" />
                 <D VAR="u_e" VALUE="ue_scale*(2*(z-zmin)/zsize-1)" />
                 <N VAR="phi" VALUE="0" />
             </REGION>
