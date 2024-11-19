@@ -52,15 +52,15 @@ RogersRicci3D::RogersRicci3D(
 {
     n_idx   = 0;
     Te_idx  = 1;
-    w_idx   = 2;
-    ue_idx  = 3;
+    ue_idx  = 2;
+    w_idx   = 3;
     phi_idx = 4;
 }
 
 void RogersRicci3D::v_InitObject(bool DeclareField)
 {
     // Needs to be set before calling parent member function
-    m_intVariables = {n_idx, Te_idx, w_idx, ue_idx};
+    m_intVariables = {n_idx, Te_idx, ue_idx, w_idx};
 
     RogersRicci::v_InitObject(DeclareField);
 

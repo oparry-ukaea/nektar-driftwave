@@ -2,7 +2,7 @@
 <NEKTAR>
     <COLLECTIONS DEFAULT="NoCollection" />
     <EXPANSIONS>
-        <E COMPOSITE="C[0]" NUMMODES="2" TYPE="MODIFIED" FIELDS="n,T_e,w,u_e,phi" />
+        <E COMPOSITE="C[0]" NUMMODES="2" TYPE="MODIFIED" FIELDS="n,T_e,u_e,w,phi" />
     </EXPANSIONS>
 
     <CONDITIONS>
@@ -31,8 +31,8 @@
         <VARIABLES>
             <V ID="0"> n </V>
             <V ID="1"> T_e </V>
-            <V ID="2"> w </V>
-            <V ID="3"> u_e </V>
+            <V ID="2"> u_e </V>
+            <V ID="3"> w </V>
             <V ID="4"> phi </V>
         </VARIABLES>
 
