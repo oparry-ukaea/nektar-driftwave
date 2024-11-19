@@ -60,7 +60,7 @@ RogersRicci3D::RogersRicci3D(
 void RogersRicci3D::v_InitObject(bool DeclareField)
 {
     // Needs to be set before calling parent member function
-    m_intVariables = {n_idx, Te_idx, w_idx};
+    m_intVariables = {n_idx, Te_idx, w_idx, ue_idx};
 
     RogersRicci::v_InitObject(DeclareField);
 
@@ -140,10 +140,11 @@ void RogersRicci3D::ExplicitTimeInt(
     Array<OneD, NekDouble> n       = inarray[n_int_idx];
     Array<OneD, NekDouble> T_e     = inarray[Te_int_idx];
     Array<OneD, NekDouble> w       = inarray[w_int_idx];
-    Array<OneD, NekDouble> ue      = m_fields[ue_idx]->GetPhys();
+    Array<OneD, NekDouble> ue      = inarray[ue_int_idx];
     Array<OneD, NekDouble> n_out   = outarray[n_int_idx];
     Array<OneD, NekDouble> T_e_out = outarray[Te_int_idx];
     Array<OneD, NekDouble> w_out   = outarray[w_int_idx];
+    Array<OneD, NekDouble> ue_out  = outarray[ue_int_idx];
     Array<OneD, NekDouble> phi     = m_fields[phi_idx]->UpdatePhys();
 
     // Set up factors for electrostatic potential solve. We support a generic
@@ -180,6 +181,7 @@ void RogersRicci3D::ExplicitTimeInt(
                           outarray, time);
     Vmath::Smul(m_npts, -40.0, n_out, 1, n_out, 1);
     Vmath::Smul(m_npts, -40.0, T_e_out, 1, T_e_out, 1);
+    Vmath::Smul(m_npts, -40.0, ue_out, 1, ue_out, 1);
     Vmath::Smul(m_npts, -40.0, w_out, 1, w_out, 1);
 
     // Put advection term on the right hand side.
