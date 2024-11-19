@@ -109,9 +109,6 @@ void RogersRicci3D::ExplicitTimeInt(
     const Array<OneD, const Array<OneD, NekDouble>> &inarray,
     Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time)
 {
-    // nPts below corresponds to the total number of solution/integration
-    // points: i.e. number of elements * quadrature points per element.
-    int i;
 
     // Set up factors for electrostatic potential solve. We support a generic
     // Helmholtz solve of the form (\nabla^2 - \lambda) u = f, so this sets
@@ -159,7 +156,7 @@ void RogersRicci3D::ExplicitTimeInt(
     const NekDouble Ls_boost = 2.0;
     const NekDouble L_s      = 0.5 * rho_s0 * Ls_boost; // maybe wrong
 
-    for (i = 0; i < m_npts; ++i)
+    for (auto i = 0; i < m_npts; ++i)
     {
         NekDouble et = exp(3 - phi[i] / sqrt(T_e[i] * T_e[i] + 1e-4));
         NekDouble st = 0.03 * (1.0 - tanh((rho_s0 * m_r[i] - r_s) / L_s));
