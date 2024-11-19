@@ -36,12 +36,7 @@
 #ifndef NEKTAR_ROGERSRICCI2D_H
 #define NEKTAR_ROGERSRICCI2D_H
 
-#include <SolverUtils/AdvectionSystem.h>
-#include <SolverUtils/RiemannSolvers/RiemannSolver.h>
-
-#include "ImplicitHelper.hpp"
-
-using namespace Nektar::SolverUtils;
+#include "RogersRicci.h"
 
 namespace Nektar
 {
@@ -49,7 +44,7 @@ namespace Nektar
 /**
  * @brief An equation system for the drift-wave solver.
  */
-class RogersRicci2D : public AdvectionSystem
+class RogersRicci2D : public RogersRicci
 {
 public:
     // Friend class to allow the memory manager to allocate shared pointers of
@@ -72,71 +67,16 @@ public:
     /// create method above.
     static std::string className;
 
-    // Require a fixed variable order; use these indices for clarity
-    static constexpr int n_idx   = 0;
-    static constexpr int Te_idx  = 1;
-    static constexpr int w_idx   = 2;
-    static constexpr int phi_idx = 3;
-
-    /// Default destructor.
-    virtual ~RogersRicci2D() = default;
-
 protected:
-    /// Helper function to define constants.
-    NekDouble c(std::string n)
-    {
-        auto it = m_c.find(n);
-
-        ASSERTL0(it != m_c.end(), "Unknown constant");
-
-        return it->second;
-    }
-
-    /// Map of known constants
-    std::map<std::string, NekDouble> m_c = {
-        {"T_e", 6.0},      {"L_z", 18.0},       {"n_0", 2.0e18},
-        {"m_i", 6.67e-27}, {"omega_ci", 9.6e5}, {"lambda", 3.0},
-        {"R", 0.5}};
-
-    /// Storage for the drift velocity. The outer index is dimension, and inner
-    /// index the solution nodes (in physical space).
-    Array<OneD, Array<OneD, NekDouble>> m_driftVel;
-    /// Storage for the dot product of drift velocity with element edge normals,
-    /// required for the DG formulation.
-    Array<OneD, NekDouble> m_traceVn;
-    /// A SolverUtils::Advection object, which abstracts the calculation of the
-    /// \f$ \nabla\cdot\mathbf{F} \f$ operator using different approaches.
-    AdvectionSharedPtr m_advObject;
-    /// A Riemann solver object to solve numerical fluxes arising from DG: in
-    /// this case a simple upwind.
-    RiemannSolverSharedPtr m_riemannSolver;
-    /// Helper object for fully-implicit solve.
-    std::shared_ptr<ImplicitHelper> m_implHelper;
-
-    Array<OneD, NekDouble> m_r;
-
-    /// Protected constructor. Since we use a factory pattern, objects should be
-    /// constructed via the SolverUtils::EquationSystem factory.
     RogersRicci2D(const LibUtilities::SessionReaderSharedPtr &session,
                   const SpatialDomains::MeshGraphSharedPtr &graph);
 
-    virtual void v_InitObject(bool DeclareField = true) override;
-
-    void InitialiseNonlinSysSolver(void);
-
-    void ExplicitTimeInt(
+    virtual void ExplicitTimeInt(
         const Array<OneD, const Array<OneD, NekDouble>> &inarray,
-        Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time);
-    void DoOdeProjection(
-        const Array<OneD, const Array<OneD, NekDouble>> &inarray,
-        Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time);
-    void GetFluxVector(const Array<OneD, Array<OneD, NekDouble>> &physfield,
-                       Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux);
+        Array<OneD, Array<OneD, NekDouble>> &outarray,
+        const NekDouble time) override;
 
-    Array<OneD, NekDouble> &GetNormalVelocity();
-
-    int m_npts;
-    int m_ndims;
+    void v_InitObject(bool DeclareField) override;
 };
 
 } // namespace Nektar

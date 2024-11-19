@@ -45,230 +45,33 @@ std::string RogersRicci2D::className =
         "RogersRicci2D", RogersRicci2D::create,
         "System for the Rogers-Ricci 2D system of equations.");
 
-class UpwindNeumannSolver : public SolverUtils::RiemannSolver
-{
-public:
-    UpwindNeumannSolver(const LibUtilities::SessionReaderSharedPtr &pSession)
-        : SolverUtils::RiemannSolver(pSession)
-    {
-    }
-
-    void SetNeumannIdx(std::set<std::size_t> idx)
-    {
-        m_neumannIdx = idx;
-    }
-
-protected:
-    std::set<std::size_t> m_neumannIdx;
-
-    void v_Solve(const int nDim,
-                 const Array<OneD, const Array<OneD, NekDouble>> &Fwd,
-                 const Array<OneD, const Array<OneD, NekDouble>> &Bwd,
-                 Array<OneD, Array<OneD, NekDouble>> &flux) final
-    {
-        ASSERTL1(CheckScalars("Vn"), "Vn not defined.");
-        const Array<OneD, NekDouble> &traceVel = m_scalars["Vn"]();
-
-        for (int j = 0; j < traceVel.size(); ++j)
-        {
-            const Array<OneD, const Array<OneD, NekDouble>> &tmp =
-                traceVel[j] >= 0 ? Fwd : Bwd;
-            for (int i = 0; i < Fwd.size(); ++i)
-            {
-                flux[i][j] = traceVel[j] * tmp[i][j];
-            }
-        }
-
-        // Overwrite Neumann conditions with a zero flux
-        for (auto &idx : m_neumannIdx)
-        {
-            for (int i = 0; i < Fwd.size(); ++i)
-            {
-                flux[i][idx] = 0.0;
-            }
-        }
-    }
-};
-
 RogersRicci2D::RogersRicci2D(
     const LibUtilities::SessionReaderSharedPtr &session,
     const SpatialDomains::MeshGraphSharedPtr &graph)
-    : UnsteadySystem(session, graph), AdvectionSystem(session, graph),
-      m_driftVel(3)
+    : RogersRicci(session, graph), UnsteadySystem(session, graph)
 {
-    // Set up constants
-    /*
-    m_c["B"] = c("omega_ci") * c("m_i") * c("q_E");
-    m_c["c_s0"] = sqrt(c("T_e0") / c("m_i"));
-    m_c["rho_s0"] = c("c_s0") / c("omega_ci");
-    m_c["S_0n"] = 0.03 * c("n0") * c("c_s0") / c("R");
-    m_c["S_0T"] = 0.03 * c("T_e0") * c("c_s0") / c("R");
-    m_c["omega"] = 1.5 * c("R") / c("L_z");
-    */
-}
-
-void check_var_idx(const LibUtilities::SessionReaderSharedPtr session,
-                   const int &idx, const std::string var_name)
-{
-    std::stringstream err;
-    err << "Expected variable index " << idx << " to correspond to '"
-        << var_name << "'. Check your session file.";
-    ASSERTL0(session->GetVariable(idx).compare(var_name) == 0, err.str());
-}
-
-void check_field_sizes(Array<OneD, MultiRegions::ExpListSharedPtr> fields,
-                       const int npts)
-{
-    for (auto i = 0; i < fields.size(); i++)
-    {
-        ASSERTL0(fields[i]->GetNpoints() == npts,
-                 "Detected fields with different numbers of quadrature points; "
-                 "this solver assumes they're all the same");
-    }
+    n_idx   = 0;
+    Te_idx  = 1;
+    w_idx   = 2;
+    phi_idx = 3;
 }
 
 void RogersRicci2D::v_InitObject(bool DeclareField)
 {
-    AdvectionSystem::v_InitObject(DeclareField);
+    // Needs to be set before calling parent member function
+    m_intVariables = {n_idx, Te_idx, w_idx};
+
+    RogersRicci::v_InitObject(DeclareField);
 
     ASSERTL0(m_fields.size() == 4,
              "Incorrect number of variables detected (expected 4): check your "
              "session file.");
-
-    // Store mesh dimension for easy retrieval later.
-    m_ndims = m_graph->GetMeshDimension();
-    ASSERTL0(m_ndims == 2 || m_ndims == 3,
-             "Solver only supports 2D or 3D meshes.");
 
     // Check variable order is as expected
     check_var_idx(m_session, n_idx, "n");
     check_var_idx(m_session, Te_idx, "T_e");
     check_var_idx(m_session, w_idx, "w");
     check_var_idx(m_session, phi_idx, "phi");
-
-    // Check fields all have the same number of quad points
-    m_npts = m_fields[0]->GetNpoints();
-    check_field_sizes(m_fields, m_npts);
-
-    m_fields[phi_idx] =
-        MemoryManager<MultiRegions::ContField>::AllocateSharedPtr(
-            m_session, m_graph, m_session->GetVariable(phi_idx), true, true);
-    m_intVariables = {n_idx, Te_idx, w_idx};
-
-    // Assign storage for drift velocity.
-    for (int i = 0; i < m_driftVel.size(); ++i)
-    {
-        m_driftVel[i] = Array<OneD, NekDouble>(m_npts, 0.0);
-    }
-
-    switch (m_projectionType)
-    {
-        case MultiRegions::eDiscontinuous:
-        {
-            m_homoInitialFwd = false;
-
-            if (m_fields[0]->GetTrace())
-            {
-                m_traceVn = Array<OneD, NekDouble>(GetTraceNpoints());
-            }
-
-            std::string advName, riemName;
-            m_session->LoadSolverInfo("AdvectionType", advName, "WeakDG");
-            m_advObject = SolverUtils::GetAdvectionFactory().CreateInstance(
-                advName, advName);
-            m_advObject->SetFluxVector(&RogersRicci2D::GetFluxVector, this);
-
-            m_riemannSolver = std::make_shared<UpwindNeumannSolver>(m_session);
-            m_riemannSolver->SetScalar("Vn", &RogersRicci2D::GetNormalVelocity,
-                                       this);
-
-            // Tell the advection object about the Riemann solver to use, and
-            // then get it set up.
-            m_advObject->SetRiemannSolver(m_riemannSolver);
-            m_advObject->InitObject(m_session, m_fields);
-            break;
-        }
-
-        default:
-        {
-            ASSERTL0(false, "Unsupported projection type: only discontinuous"
-                            " projection supported.");
-            break;
-        }
-    }
-
-    m_ode.DefineOdeRhs(&RogersRicci2D::ExplicitTimeInt, this);
-    m_ode.DefineProjection(&RogersRicci2D::DoOdeProjection, this);
-
-    if (!m_explicitAdvection)
-    {
-        m_implHelper = std::make_shared<ImplicitHelper>(
-            m_session, m_fields, m_ode, m_intVariables.size());
-        m_implHelper->InitialiseNonlinSysSolver();
-        m_ode.DefineImplicitSolve(&ImplicitHelper::ImplicitTimeInt,
-                                  m_implHelper);
-    }
-
-    // Store distance of quad points from origin in transverse plane.
-    // (used to compute source terms)
-    Array<OneD, NekDouble> x = Array<OneD, NekDouble>(m_npts);
-    Array<OneD, NekDouble> y = Array<OneD, NekDouble>(m_npts);
-    m_r                      = Array<OneD, NekDouble>(m_npts);
-    if (m_ndims == 3)
-    {
-        Array<OneD, NekDouble> z = Array<OneD, NekDouble>(m_npts);
-        m_fields[0]->GetCoords(x, y, z);
-    }
-    else
-    {
-        m_fields[0]->GetCoords(x, y);
-    }
-    for (int i = 0; i < m_npts; ++i)
-    {
-        m_r[i] = sqrt(x[i] * x[i] + y[i] * y[i]);
-    }
-
-    // Figure out Neumann quadrature in trace
-    const Array<OneD, const int> &traceBndMap = m_fields[0]->GetTraceBndMap();
-    std::set<std::size_t> neumannIdx;
-    for (size_t n = 0, cnt = 0;
-         n < (size_t)m_fields[0]->GetBndConditions().size(); ++n)
-    {
-        if (m_fields[0]->GetBndConditions()[n]->GetBoundaryConditionType() ==
-            SpatialDomains::ePeriodic)
-        {
-            continue;
-        }
-
-        int nExp = m_fields[0]->GetBndCondExpansions()[n]->GetExpSize();
-
-        if (m_fields[0]->GetBndConditions()[n]->GetBoundaryConditionType() !=
-            SpatialDomains::eNeumann)
-        {
-            cnt += nExp;
-            continue;
-        }
-
-        for (int e = 0; e < nExp; ++e)
-        {
-            auto nBCEdgePts = m_fields[0]
-                                  ->GetBndCondExpansions()[n]
-                                  ->GetExp(e)
-                                  ->GetTotPoints();
-
-            auto id =
-                m_fields[0]->GetTrace()->GetPhys_Offset(traceBndMap[cnt + e]);
-            for (int q = 0; q < nBCEdgePts; ++q)
-            {
-                neumannIdx.insert(id + q);
-            }
-        }
-
-        cnt += nExp;
-    }
-
-    std::dynamic_pointer_cast<UpwindNeumannSolver>(m_riemannSolver)
-        ->SetNeumannIdx(neumannIdx);
 }
 
 /**
@@ -365,75 +168,4 @@ void RogersRicci2D::ExplicitTimeInt(
         outarray[w_idx][i] = -40 * outarray[w_idx][i] + 1.0 / 24.0 * (1 - et);
     }
 }
-
-/**
- * @brief Perform projection into correct polynomial space.
- *
- * This routine projects the @p inarray input and ensures the @p outarray output
- * lives in the correct space. Since we are hard-coding DG, this corresponds to
- * a simple copy from in to out, since no elemental connectivity is required and
- * the output of the RHS function is polynomial.
- */
-void RogersRicci2D::DoOdeProjection(
-    const Array<OneD, const Array<OneD, NekDouble>> &inarray,
-    Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time)
-{
-    int nvariables = inarray.size(), npoints = GetNpoints();
-    SetBoundaryConditions(time);
-
-    for (int i = 0; i < nvariables; ++i)
-    {
-        Vmath::Vcopy(npoints, inarray[i], 1, outarray[i], 1);
-    }
-}
-
-/**
- * @brief Compute the flux vector for this system.
- */
-void RogersRicci2D::GetFluxVector(
-    const Array<OneD, Array<OneD, NekDouble>> &physfield,
-    Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux)
-{
-    ASSERTL1(flux[0].size() == m_driftVel.size(),
-             "Dimension of flux array and velocity array do not match");
-
-    int nq = physfield[0].size();
-
-    for (int i = 0; i < flux.size(); ++i)
-    {
-        for (int j = 0; j < flux[0].size(); ++j)
-        {
-            Vmath::Vmul(nq, physfield[i], 1, m_driftVel[j], 1, flux[i][j], 1);
-        }
-    }
-}
-
-/**
- * @brief Compute the normal advection velocity for this system on the
- * trace/skeleton/edges of the 2D mesh.
- */
-Array<OneD, NekDouble> &RogersRicci2D::GetNormalVelocity()
-{
-    // Number of trace (interface) points
-    int nTracePts = GetTraceNpoints();
-
-    // Auxiliary variable to compute the normal velocity
-    Array<OneD, NekDouble> tmp(nTracePts);
-
-    // Reset the normal velocity
-    Vmath::Zero(nTracePts, m_traceVn, 1);
-
-    // Compute dot product of velocity along trace with trace normals. Store in
-    // m_traceVn.
-    for (int i = 0; i < m_ndims; ++i)
-    {
-        m_fields[0]->ExtractTracePhys(m_driftVel[i], tmp);
-
-        Vmath::Vvtvp(nTracePts, m_traceNormals[i], 1, tmp, 1, m_traceVn, 1,
-                     m_traceVn, 1);
-    }
-
-    return m_traceVn;
-}
-
 } // namespace Nektar
