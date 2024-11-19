@@ -79,6 +79,10 @@ protected:
     void v_InitObject(bool DeclareField) override;
 
 private:
+    // Model params
+    NekDouble mu;
+    NekDouble tau;
+
     // Subclass-specific indices
     int ue_idx;
     int ue_int_idx;

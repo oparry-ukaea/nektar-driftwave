@@ -19,6 +19,9 @@
             <P> IO_InfoSteps   = 10                </P>
             <P> IO_CheckSteps  = 100                </P>
             <P> ue_scale=0.1 </P>
+            <!-- Model params -->
+            <P> mu  = 0.04 </P>
+            <P> tau = 25.0 </P> <!-- scaled down from 400 for now -->
             <!-- For ICs set up -->
             <P> zmin  = -18.0  </P>
             <P> zsize  = 36.0  </P>

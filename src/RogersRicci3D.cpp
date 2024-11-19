@@ -81,6 +81,9 @@ void RogersRicci3D::v_InitObject(bool DeclareField)
     set_int_idx(Te_idx, Te_int_idx);
     set_int_idx(w_idx, w_int_idx);
     set_int_idx(ue_idx, ue_int_idx);
+
+    m_session->LoadParameter("mu", this->mu);
+    m_session->LoadParameter("tau", this->tau);
 }
 
 /**
