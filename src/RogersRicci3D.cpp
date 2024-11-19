@@ -53,17 +53,18 @@ RogersRicci3D::RogersRicci3D(
     n_idx   = 0;
     Te_idx  = 1;
     w_idx   = 2;
-    phi_idx = 3;
+    ue_idx  = 3;
+    phi_idx = 4;
 }
 
 void RogersRicci3D::v_InitObject(bool DeclareField)
 {
     // Needs to be set before calling parent member function
-    m_intVariables = {n_idx, Te_idx, w_idx};
+    m_intVariables = {n_idx, Te_idx, w_idx, ue_idx};
 
     RogersRicci::v_InitObject(DeclareField);
 
-    ASSERTL0(m_fields.size() == 4,
+    ASSERTL0(m_fields.size() == 5,
              "Incorrect number of variables detected (expected 4): check your "
              "session file.");
 
@@ -71,6 +72,7 @@ void RogersRicci3D::v_InitObject(bool DeclareField)
     check_var_idx(m_session, n_idx, "n");
     check_var_idx(m_session, Te_idx, "T_e");
     check_var_idx(m_session, w_idx, "w");
+    check_var_idx(m_session, ue_idx, "u_e");
     check_var_idx(m_session, phi_idx, "phi");
 }
 
@@ -139,9 +141,9 @@ void RogersRicci3D::ExplicitTimeInt(
     // like negating entries in a vector.
     Vmath::Neg(m_npts, m_driftVel[1], 1);
 
-    // Do advection for zeta, n. The hard-coded '3' here indicates that we
-    // should only advect the first two components of inarray.
-    m_advObject->Advect(3, m_fields, m_driftVel, inarray, outarray, time);
+    // Do advection
+    m_advObject->Advect(inarray.size(), m_fields, m_driftVel, inarray, outarray,
+                        time);
 
     Array<OneD, NekDouble> n   = inarray[n_idx];
     Array<OneD, NekDouble> T_e = inarray[Te_idx];

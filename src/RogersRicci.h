@@ -123,6 +123,7 @@ protected:
     int n_idx;
     int Te_idx;
     int w_idx;
+    int ue_idx;
     int phi_idx;
 };
 
