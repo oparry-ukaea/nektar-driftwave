@@ -11,6 +11,7 @@
             <I PROPERTY="Projection" VALUE="DisContinuous" />
             <I PROPERTY="TimeIntegrationMethod" VALUE="DIRKOrder2" />
             <I PROPERTY="AdvectionAdvancement"  VALUE="Implicit" />
+            <I PROPERTY="UpwindType"  VALUE="CustomUpwind" />
         </SOLVERINFO>
 
         <PARAMETERS>

@@ -43,7 +43,16 @@ namespace Nektar
 
 class UpwindNeumannSolver : public SolverUtils::RiemannSolver
 {
+
 public:
+    static RiemannSolverSharedPtr create(
+        const LibUtilities::SessionReaderSharedPtr &pSession)
+    {
+        return RiemannSolverSharedPtr(new UpwindNeumannSolver(pSession));
+    }
+
+    static std::string solver_name;
+
     UpwindNeumannSolver(const LibUtilities::SessionReaderSharedPtr &pSession)
         : SolverUtils::RiemannSolver(pSession)
     {
@@ -76,6 +85,11 @@ protected:
         }
     }
 };
+
+std::string UpwindNeumannSolver::solver_name =
+    SolverUtils::GetRiemannSolverFactory().RegisterCreatorFunction(
+        "CustomUpwind", UpwindNeumannSolver::create,
+        "Customised upwind solver for 3DRR");
 
 RogersRicci::RogersRicci(const LibUtilities::SessionReaderSharedPtr &session,
                          const SpatialDomains::MeshGraphSharedPtr &graph)
