@@ -39,6 +39,7 @@
 #include <SolverUtils/AdvectionSystem.h>
 #include <SolverUtils/RiemannSolvers/RiemannSolver.h>
 
+#include "BoundaryConditions/CustomBCs.h"
 #include "ImplicitHelper.hpp"
 
 using namespace Nektar::SolverUtils;
@@ -132,6 +133,10 @@ protected:
     int Te_int_idx;
     int w_int_idx;
     int phi_int_idx;
+
+private:
+    /// User defined boundary conditions
+    std::vector<CustomBCsSharedPtr> m_custom_BCs;
 };
 
 // Helper functions

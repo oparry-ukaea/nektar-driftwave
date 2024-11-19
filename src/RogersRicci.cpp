@@ -34,6 +34,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "RogersRicci.h"
+
 #include <MultiRegions/ContField.h>
 #include <SolverUtils/RiemannSolvers/RiemannSolver.h>
 
@@ -225,6 +226,32 @@ void RogersRicci::v_InitObject(bool DeclareField)
 
     std::dynamic_pointer_cast<UpwindNeumannSolver>(m_riemannSolver)
         ->SetNeumannIdx(neumannIdx);
+
+    // Set up user-defined boundary conditions, if any were specified
+    for (int ifld = 0; ifld < m_fields.size(); ifld++)
+    {
+        int cnt = 0;
+        for (int icnd = 0; icnd < m_fields[ifld]->GetBndConditions().size();
+             ++icnd)
+        {
+            SpatialDomains::BoundaryConditionShPtr cnd =
+                m_fields[ifld]->GetBndConditions()[icnd];
+            if (cnd->GetBoundaryConditionType() != SpatialDomains::ePeriodic)
+            {
+                std::string type = cnd->GetUserDefined();
+                if (!type.empty())
+                {
+                    CustomBCsSharedPtr BCs_instance =
+                        GetCustomBCsFactory().CreateInstance(
+                            type, m_session, m_fields, m_traceNormals, ifld,
+                            m_spacedim, icnd, cnt, cnd);
+                    m_custom_BCs.push_back(BCs_instance);
+                }
+                cnt +=
+                    m_fields[ifld]->GetBndCondExpansions()[icnd]->GetExpSize();
+            }
+        }
+    }
 }
 
 /**

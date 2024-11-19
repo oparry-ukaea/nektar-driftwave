@@ -29,6 +29,8 @@ ADD_EXECUTABLE(DriftWaveSolver
     src/RogersRicci.cpp
     src/RogersRicci2D.cpp
     src/RogersRicci3D.cpp
+    src/BoundaryConditions/CustomBCs.cpp
+    src/BoundaryConditions/OutflowBCs.cpp
     )
 
 # Add target link libraries.

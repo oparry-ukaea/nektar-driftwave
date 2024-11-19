@@ -156,11 +156,11 @@ void DriftWaveSystem::v_InitObject(bool DeclareField)
 
     if (!m_explicitAdvection)
     {
-        m_implHelper = std::make_shared<ImplicitHelper>(
-            m_session, m_fields, m_ode, 2);
+        m_implHelper =
+            std::make_shared<ImplicitHelper>(m_session, m_fields, m_ode, 2);
         m_implHelper->InitialiseNonlinSysSolver();
-        m_ode.DefineImplicitSolve(
-            &ImplicitHelper::ImplicitTimeInt, m_implHelper);
+        m_ode.DefineImplicitSolve(&ImplicitHelper::ImplicitTimeInt,
+                                  m_implHelper);
     }
 }
 
