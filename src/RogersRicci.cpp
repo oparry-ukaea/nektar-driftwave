@@ -126,7 +126,7 @@ void RogersRicci::v_InitObject(bool DeclareField)
 
             if (m_fields[0]->GetTrace())
             {
-                m_traceVn = Array<OneD, NekDouble>(GetTraceNpoints());
+                m_traceVdriftnorm = Array<OneD, NekDouble>(GetTraceNpoints());
             }
 
             // Advection and Riemann solver for drift velocity
@@ -242,7 +242,8 @@ void RogersRicci::GetDriftFluxVector(
  */
 Array<OneD, NekDouble> &RogersRicci::GetDriftNormalVelocity()
 {
-    return get_norm_vels(m_traceVn, m_driftVel, m_traceNormals, m_fields);
+    return get_norm_vels(m_traceVdriftnorm, m_driftVel, m_traceNormals,
+                         m_fields);
 }
 
 void RogersRicci::set_int_idx(const int &idx, int &int_idx)

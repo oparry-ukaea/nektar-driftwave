@@ -91,7 +91,7 @@ protected:
     Array<OneD, Array<OneD, NekDouble>> m_driftVel;
     /// Storage for the dot product of drift velocity with element edge normals,
     /// required for the DG formulation.
-    Array<OneD, NekDouble> m_traceVn;
+    Array<OneD, NekDouble> m_traceVdriftnorm;
     /// A Riemann solver object to solve numerical fluxes arising from DG: in
     /// this case a simple upwind.
     RiemannSolverSharedPtr m_drift_riemannSolver;
