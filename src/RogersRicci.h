@@ -86,15 +86,12 @@ protected:
         {"m_i", 6.67e-27}, {"omega_ci", 9.6e5}, {"lambda", 3.0},
         {"R", 0.5}};
 
-    /// Storage for the advection velocity. The outer index is dimension, and
-    /// inner index the solution nodes (in physical space).
-    Array<OneD, Array<OneD, NekDouble>> m_advVel;
+    /// Storage for the (drift) advection velocity. The outer index is
+    /// dimension, and inner index the solution nodes (in physical space).
+    Array<OneD, Array<OneD, NekDouble>> m_driftVel;
     /// Storage for the dot product of drift velocity with element edge normals,
     /// required for the DG formulation.
     Array<OneD, NekDouble> m_traceVn;
-    /// A SolverUtils::Advection object, which abstracts the calculation of the
-    /// \f$ \nabla\cdot\mathbf{F} \f$ operator using different approaches.
-    AdvectionSharedPtr m_advObject;
     /// A Riemann solver object to solve numerical fluxes arising from DG: in
     /// this case a simple upwind.
     RiemannSolverSharedPtr m_riemannSolver;
@@ -133,6 +130,11 @@ protected:
     int Te_int_idx;
     int w_int_idx;
     int phi_int_idx;
+
+    // Use this, rather than AdvectionSystem::m_advObject, for drift velocity
+    // advection - makes things clearer when multiple advection objects are
+    // needed in 3D subclass
+    SolverUtils::AdvectionSharedPtr advObj_vdrift;
 
 private:
     /// User defined boundary conditions

@@ -90,26 +90,6 @@ void RogersRicci3D::v_InitObject(bool DeclareField)
  * @brief Evaluate the right-hand side of the ODE system used to integrate in
  * time.
  *
- * This routine performs the bulk of the work in this class, and essentially
- * computes the right hand side term of the generalised ODE system
- *
- * \f\[ \frac{\partial \mathbf{u}}{\partial t} = \mathbf{R}(\mathbf{u}) \f\]
- *
- * The order of operations is as follows:
- *
- * - First, compute the electrostatic potential \f$ \phi \f$, given the
- * - Using this, compute the drift velocity \f$ (\partial_y\phi,
- *   -\partial_x\phi).
- * - Then evaluate the \f$ \nabla\cdot\mathbf{F} \f$ operator using the
- *   advection object #m_advObject.
- * - Finally put this on the right hand side and evaluate the source terms for
- *   each field.
- *
- * The assumption here is that fields are ordered inside `m_fields` so that
- * field 0 is vorticity \f$ \zeta \f$, field 1 is number density \f$ n \f$, and
- * field 2 is electrostatic potential. Only \f$ \zeta \f$ and \f$ n \f$ are time
- * integrated.
- *
  * @param inarray    Array containing each field's current state.
  * @param outarray   The result of the right-hand side operator for each field
  *                   being time integrated.
@@ -147,18 +127,18 @@ void RogersRicci3D::ExplicitTimeInt(
     // Calculate drift velocity v_E: PhysDeriv takes input and computes spatial
     // derivatives.
     Array<OneD, NekDouble> dummy = Array<OneD, NekDouble>(m_npts);
-    m_fields[phi_idx]->PhysDeriv(m_fields[phi_idx]->GetPhys(), m_advVel[1],
-                                 m_advVel[0], dummy);
+    m_fields[phi_idx]->PhysDeriv(m_fields[phi_idx]->GetPhys(), m_driftVel[1],
+                                 m_driftVel[0], dummy);
 
     // We frequently use vector math (Vmath) routines for one-line operations
     // like negating entries in a vector.
-    Vmath::Neg(m_npts, m_advVel[1], 1);
-    
-    // Add parallel velocity to advection
-    Vmath::Vcopy(m_npts, ue, 1, m_advVel[2], 1);
+    Vmath::Neg(m_npts, m_driftVel[1], 1);
 
-    m_advObject->Advect(inarray.size(), m_fields, m_advVel, inarray, outarray,
-                        time);
+    // // Add parallel velocity to advection
+    // Vmath::Vcopy(m_npts, ue, 1, m_driftVel[2], 1);
+
+    advObj_vdrift->Advect(inarray.size(), m_fields, m_driftVel, inarray,
+                          outarray, time);
 
     // Put advection term on the right hand side.
     const NekDouble rho_s0 = 1.2e-2;
