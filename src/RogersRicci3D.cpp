@@ -84,6 +84,44 @@ void RogersRicci3D::v_InitObject(bool DeclareField)
 
     m_session->LoadParameter("mu", this->mu);
     m_session->LoadParameter("tau", this->tau);
+
+    // Init some class-level storage
+    adv_result = Array<OneD, Array<OneD, NekDouble>>(m_intVariables.size());
+
+    for (auto ii = 0; ii < this->adv_result.size(); ii++)
+    {
+        this->adv_result[ii] = Array<OneD, NekDouble>(m_npts, 0.0);
+    }
+    this->ue_vals = Array<OneD, Array<OneD, NekDouble>>(this->m_ndims);
+    for (auto ii = 0; ii < this->ue_vals.size(); ii++)
+    {
+        this->ue_vals[ii] = Array<OneD, NekDouble>(m_npts, 0.0);
+    }
+
+    switch (m_projectionType)
+    {
+        case MultiRegions::eDiscontinuous:
+        {
+
+            if (m_fields[0]->GetTrace())
+            {
+                m_traceUenorm = Array<OneD, NekDouble>(GetTraceNpoints());
+            }
+
+            // Advection object and Riemann solver for electron parallel
+            // velocity
+            init_advection_obj(m_session, ue_riemannSolver, advObj_ue);
+            advObj_ue->SetFluxVector(&RogersRicci3D::GetUeFluxVector, this);
+            ue_riemannSolver->SetScalar(
+                "Vn", &RogersRicci3D::GetUeNormalVelocity, this);
+            advObj_ue->InitObject(m_session, m_fields);
+            break;
+        }
+
+        default:
+            break;
+            // Valid projection checked elsewhere; no action here
+    }
 }
 
 /**
@@ -162,4 +200,25 @@ void RogersRicci3D::ExplicitTimeInt(
         w_out[i]   = w_out[i] + 1.0 / 24.0 * (1 - et);
     }
 }
+
+/**
+ * @brief Compute the flux vector for parallel electron velocity advection.
+ */
+void RogersRicci3D::GetUeFluxVector(
+    const Array<OneD, Array<OneD, NekDouble>> &physfield,
+    Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux)
+{
+    get_flux_vector(physfield, flux, this->ue_vals);
+}
+
+/**
+ * @brief Compute the normal parallel electron velocities on the
+ * trace/skeleton/edges of the mesh.
+ */
+Array<OneD, NekDouble> &RogersRicci3D::GetUeNormalVelocity()
+{
+    return get_norm_vels(m_traceUenorm, this->ue_vals, m_traceNormals,
+                         m_fields);
+}
+
 } // namespace Nektar

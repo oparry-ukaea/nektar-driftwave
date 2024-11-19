@@ -79,6 +79,24 @@ protected:
     void v_InitObject(bool DeclareField) override;
 
 private:
+    // Riemann solver object for parallel electron advection
+    RiemannSolverSharedPtr ue_riemannSolver;
+
+    // Storage for advection results
+    Array<OneD, Array<OneD, NekDouble>> adv_result;
+
+    // Copy of ue phys vals that's updated every integration stage - used in
+    // callback functions for ue advection
+    Array<OneD, Array<OneD, NekDouble>> ue_vals;
+
+    /// Storage for the dot product of ue with element edge normals,
+    /// required for the DG formulation.
+    Array<OneD, NekDouble> m_traceUenorm;
+
+    // Separate advection objects for ion and electron parallel velocities
+    SolverUtils::AdvectionSharedPtr advObj_ue;
+    // SolverUtils::AdvectionSharedPtr advObj_ui;
+
     // Model params
     NekDouble mu;
     NekDouble tau;
@@ -86,6 +104,11 @@ private:
     // Subclass-specific indices
     int ue_idx;
     int ue_int_idx;
+
+    void GetUeFluxVector(
+        const Array<OneD, Array<OneD, NekDouble>> &physfield,
+        Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux);
+    Array<OneD, NekDouble> &GetUeNormalVelocity();
 };
 
 } // namespace Nektar
