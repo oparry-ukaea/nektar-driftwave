@@ -73,15 +73,6 @@ protected:
                 flux[i][j] = traceVel[j] * tmp[i][j];
             }
         }
-
-        // Overwrite Neumann conditions with a zero flux
-        for (auto &idx : m_neumannIdx)
-        {
-            for (int i = 0; i < Fwd.size(); ++i)
-            {
-                flux[i][idx] = 0.0;
-            }
-        }
     }
 };
 
