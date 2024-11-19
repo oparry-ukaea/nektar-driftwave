@@ -1,5 +1,5 @@
-#ifndef DRIFTWAVE_OUTFLOWBCS_H
-#define DRIFTWAVE_OUTFLOWBCS_H
+#ifndef DRIFTWAVE_NOOPBCS_H
+#define DRIFTWAVE_NOOPBCS_H
 
 #include "CustomBCs.h"
 
@@ -11,12 +11,12 @@ namespace Nektar
 {
 
 /**
- * @brief Sheath boundary conditions class
+ * @brief No-op boundary conditions class
  */
-class OutflowBCs : public CustomBCs
+class NoOpBCs : public CustomBCs
 {
 public:
-    friend class MemoryManager<OutflowBCs>;
+    friend class MemoryManager<NoOpBCs>;
 
     /// Creates an instance of this class
     static CustomBCsSharedPtr create(
@@ -26,7 +26,7 @@ public:
         const int field_idx, const int pSpaceDim, const int bcRegion,
         const int cnt, SD::BoundaryConditionShPtr cnd)
     {
-        CustomBCsSharedPtr p = MemoryManager<OutflowBCs>::AllocateSharedPtr(
+        CustomBCsSharedPtr p = MemoryManager<NoOpBCs>::AllocateSharedPtr(
             pSession, pFields, pTraceNormals, field_idx, pSpaceDim, bcRegion,
             cnt, cnd);
         return p;
@@ -41,16 +41,13 @@ protected:
                          const NekDouble &time);
 
 private:
-    OutflowBCs(const LU::SessionReaderSharedPtr &pSession,
-               const Array<OneD, MR::ExpListSharedPtr> &pFields,
-               const Array<OneD, Array<OneD, NekDouble>> &pTraceNormals,
-               const int field_idx, const int pSpaceDim, const int bcRegion,
-               const int cnt, SD::BoundaryConditionShPtr cnd);
+    NoOpBCs(const LU::SessionReaderSharedPtr &pSession,
+            const Array<OneD, MR::ExpListSharedPtr> &pFields,
+            const Array<OneD, Array<OneD, NekDouble>> &pTraceNormals,
+            const int field_idx, const int pSpaceDim, const int bcRegion,
+            const int cnt, SD::BoundaryConditionShPtr cnd);
 
-    virtual ~OutflowBCs(void){};
-
-    int m_dens_idx;
-    int m_mom_idx;
+    virtual ~NoOpBCs(void){};
 };
 
 } // namespace Nektar
