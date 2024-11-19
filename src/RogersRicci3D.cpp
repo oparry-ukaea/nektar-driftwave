@@ -74,6 +74,13 @@ void RogersRicci3D::v_InitObject(bool DeclareField)
     check_var_idx(m_session, w_idx, "w");
     check_var_idx(m_session, ue_idx, "u_e");
     check_var_idx(m_session, phi_idx, "phi");
+
+    // Indices aren't the same in the integration arrays as in m_fields; set the
+    // former here
+    set_int_idx(n_idx, n_int_idx);
+    set_int_idx(Te_idx, Te_int_idx);
+    set_int_idx(w_idx, w_int_idx);
+    set_int_idx(ue_idx, ue_int_idx);
 }
 
 /**
@@ -109,6 +116,13 @@ void RogersRicci3D::ExplicitTimeInt(
     const Array<OneD, const Array<OneD, NekDouble>> &inarray,
     Array<OneD, Array<OneD, NekDouble>> &outarray, const NekDouble time)
 {
+    Array<OneD, NekDouble> n       = inarray[n_int_idx];
+    Array<OneD, NekDouble> T_e     = inarray[Te_int_idx];
+    Array<OneD, NekDouble> w       = inarray[w_int_idx];
+    Array<OneD, NekDouble> n_out   = outarray[n_int_idx];
+    Array<OneD, NekDouble> T_e_out = outarray[Te_int_idx];
+    Array<OneD, NekDouble> w_out   = outarray[w_int_idx];
+    Array<OneD, NekDouble> phi     = m_fields[phi_idx]->UpdatePhys();
 
     // Set up factors for electrostatic potential solve. We support a generic
     // Helmholtz solve of the form (\nabla^2 - \lambda) u = f, so this sets
@@ -123,10 +137,8 @@ void RogersRicci3D::ExplicitTimeInt(
     // Solve for phi. Output of this routine is in coefficient (spectral) space,
     // so backwards transform to physical space since we'll need that for the
     // advection step & computing drift velocity.
-    m_fields[phi_idx]->HelmSolve(inarray[w_idx],
-                                 m_fields[phi_idx]->UpdateCoeffs(), factors);
-    m_fields[phi_idx]->BwdTrans(m_fields[phi_idx]->GetCoeffs(),
-                                m_fields[phi_idx]->UpdatePhys());
+    m_fields[phi_idx]->HelmSolve(w, m_fields[phi_idx]->UpdateCoeffs(), factors);
+    m_fields[phi_idx]->BwdTrans(m_fields[phi_idx]->GetCoeffs(), phi);
 
     // Calculate drift velocity v_E: PhysDeriv takes input and computes spatial
     // derivatives.
@@ -138,14 +150,10 @@ void RogersRicci3D::ExplicitTimeInt(
     // like negating entries in a vector.
     Vmath::Neg(m_npts, m_driftVel[1], 1);
 
-    // Do advection
+    // Do advection for zeta, n. The hard-coded '3' here indicates that we
+    // should only advect the first two components of inarray.
     m_advObject->Advect(inarray.size(), m_fields, m_driftVel, inarray, outarray,
                         time);
-
-    Array<OneD, NekDouble> n   = inarray[n_idx];
-    Array<OneD, NekDouble> T_e = inarray[Te_idx];
-    Array<OneD, NekDouble> w   = inarray[w_idx];
-    Array<OneD, NekDouble> phi = m_fields[phi_idx]->UpdatePhys();
 
     // Put advection term on the right hand side.
     const NekDouble rho_s0 = 1.2e-2;
@@ -160,11 +168,10 @@ void RogersRicci3D::ExplicitTimeInt(
     {
         NekDouble et = exp(3 - phi[i] / sqrt(T_e[i] * T_e[i] + 1e-4));
         NekDouble st = 0.03 * (1.0 - tanh((rho_s0 * m_r[i] - r_s) / L_s));
-        outarray[n_idx][i] =
-            -40 * outarray[n_idx][i] - 1.0 / 24.0 * et * n[i] + st;
-        outarray[Te_idx][i] = -40 * outarray[Te_idx][i] -
-                              1.0 / 36.0 * (1.71 * et - 0.71) * T_e[i] + st;
-        outarray[w_idx][i] = -40 * outarray[w_idx][i] + 1.0 / 24.0 * (1 - et);
+        n_out[i]     = -40 * n_out[i] - 1.0 / 24.0 * et * n[i] + st;
+        T_e_out[i] =
+            -40 * T_e_out[i] - 1.0 / 36.0 * (1.71 * et - 0.71) * T_e[i] + st;
+        w_out[i] = -40 * w_out[i] + 1.0 / 24.0 * (1 - et);
     }
 }
 } // namespace Nektar

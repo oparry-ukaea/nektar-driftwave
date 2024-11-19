@@ -306,6 +306,12 @@ Array<OneD, NekDouble> &RogersRicci::GetNormalVelocity()
     return m_traceVn;
 }
 
+void RogersRicci::set_int_idx(const int &idx, int &int_idx)
+{
+    auto pos = std::find(m_intVariables.begin(), m_intVariables.end(), idx);
+    int_idx  = std::distance(m_intVariables.begin(), pos);
+}
+
 void check_field_sizes(Array<OneD, MultiRegions::ExpListSharedPtr> fields,
                        const int npts)
 {

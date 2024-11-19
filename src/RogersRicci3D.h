@@ -77,6 +77,11 @@ protected:
         const NekDouble time) override;
 
     void v_InitObject(bool DeclareField) override;
+
+private:
+    // Subclass-specific indices
+    int ue_idx;
+    int ue_int_idx;
 };
 
 } // namespace Nektar

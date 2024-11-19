@@ -116,6 +116,8 @@ protected:
         Array<OneD, Array<OneD, NekDouble>> &outarray,
         const NekDouble time) = 0;
 
+    void set_int_idx(const int &idx, int &int_idx);
+
     int m_npts;
     int m_ndims;
 
@@ -123,8 +125,13 @@ protected:
     int n_idx;
     int Te_idx;
     int w_idx;
-    int ue_idx;
     int phi_idx;
+
+    // Indices in integration arrays; also set by subclasses
+    int n_int_idx;
+    int Te_int_idx;
+    int w_int_idx;
+    int phi_int_idx;
 };
 
 // Helper functions
