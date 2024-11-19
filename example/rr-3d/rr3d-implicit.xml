@@ -18,7 +18,7 @@
             <P> TimeStep       = 2e-3               </P>
             <P> IO_InfoSteps   = 10                </P>
             <P> IO_CheckSteps  = 100                </P>
-            <P> ue_scale=0.1 </P>
+            <P> ue_scale=1.0 </P>
             <!-- Model params -->
             <P> mu  = 0.04 </P>
             <P> tau = 25.0 </P> <!-- scaled down from 400 for now -->
