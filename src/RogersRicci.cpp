@@ -87,7 +87,7 @@ protected:
 
 RogersRicci::RogersRicci(const LibUtilities::SessionReaderSharedPtr &session,
                          const SpatialDomains::MeshGraphSharedPtr &graph)
-    : AdvectionSystem(session, graph), m_driftVel(3)
+    : AdvectionSystem(session, graph), m_advVel(3)
 {
     // Set up constants
     /*
@@ -121,9 +121,9 @@ void RogersRicci::v_InitObject(bool DeclareField)
             m_session, m_graph, m_session->GetVariable(phi_idx), true, true);
 
     // Assign storage for drift velocity.
-    for (int i = 0; i < m_driftVel.size(); ++i)
+    for (int i = 0; i < m_advVel.size(); ++i)
     {
-        m_driftVel[i] = Array<OneD, NekDouble>(m_npts, 0.0);
+        m_advVel[i] = Array<OneD, NekDouble>(m_npts, 0.0);
     }
 
     switch (m_projectionType)
@@ -264,7 +264,7 @@ void RogersRicci::GetFluxVector(
     const Array<OneD, Array<OneD, NekDouble>> &physfield,
     Array<OneD, Array<OneD, Array<OneD, NekDouble>>> &flux)
 {
-    ASSERTL1(flux[0].size() == m_driftVel.size(),
+    ASSERTL1(flux[0].size() == m_advVel.size(),
              "Dimension of flux array and velocity array do not match");
 
     int nq = physfield[0].size();
@@ -273,7 +273,7 @@ void RogersRicci::GetFluxVector(
     {
         for (int j = 0; j < flux[0].size(); ++j)
         {
-            Vmath::Vmul(nq, physfield[i], 1, m_driftVel[j], 1, flux[i][j], 1);
+            Vmath::Vmul(nq, physfield[i], 1, m_advVel[j], 1, flux[i][j], 1);
         }
     }
 }
@@ -297,7 +297,7 @@ Array<OneD, NekDouble> &RogersRicci::GetNormalVelocity()
     // m_traceVn.
     for (int i = 0; i < m_ndims; ++i)
     {
-        m_fields[0]->ExtractTracePhys(m_driftVel[i], tmp);
+        m_fields[0]->ExtractTracePhys(m_advVel[i], tmp);
 
         Vmath::Vvtvp(nTracePts, m_traceNormals[i], 1, tmp, 1, m_traceVn, 1,
                      m_traceVn, 1);

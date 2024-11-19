@@ -85,9 +85,9 @@ protected:
         {"m_i", 6.67e-27}, {"omega_ci", 9.6e5}, {"lambda", 3.0},
         {"R", 0.5}};
 
-    /// Storage for the drift velocity. The outer index is dimension, and inner
-    /// index the solution nodes (in physical space).
-    Array<OneD, Array<OneD, NekDouble>> m_driftVel;
+    /// Storage for the advection velocity. The outer index is dimension, and
+    /// inner index the solution nodes (in physical space).
+    Array<OneD, Array<OneD, NekDouble>> m_advVel;
     /// Storage for the dot product of drift velocity with element edge normals,
     /// required for the DG formulation.
     Array<OneD, NekDouble> m_traceVn;

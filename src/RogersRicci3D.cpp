@@ -119,6 +119,7 @@ void RogersRicci3D::ExplicitTimeInt(
     Array<OneD, NekDouble> n       = inarray[n_int_idx];
     Array<OneD, NekDouble> T_e     = inarray[Te_int_idx];
     Array<OneD, NekDouble> w       = inarray[w_int_idx];
+    Array<OneD, NekDouble> ue      = inarray[ue_int_idx];
     Array<OneD, NekDouble> n_out   = outarray[n_int_idx];
     Array<OneD, NekDouble> T_e_out = outarray[Te_int_idx];
     Array<OneD, NekDouble> w_out   = outarray[w_int_idx];
@@ -143,16 +144,16 @@ void RogersRicci3D::ExplicitTimeInt(
     // Calculate drift velocity v_E: PhysDeriv takes input and computes spatial
     // derivatives.
     Array<OneD, NekDouble> dummy = Array<OneD, NekDouble>(m_npts);
-    m_fields[phi_idx]->PhysDeriv(m_fields[phi_idx]->GetPhys(), m_driftVel[1],
-                                 m_driftVel[0], dummy);
+    m_fields[phi_idx]->PhysDeriv(m_fields[phi_idx]->GetPhys(), m_advVel[1],
+                                 m_advVel[0], dummy);
 
     // We frequently use vector math (Vmath) routines for one-line operations
     // like negating entries in a vector.
-    Vmath::Neg(m_npts, m_driftVel[1], 1);
+    Vmath::Neg(m_npts, m_advVel[1], 1);
 
     // Do advection for zeta, n. The hard-coded '3' here indicates that we
     // should only advect the first two components of inarray.
-    m_advObject->Advect(inarray.size(), m_fields, m_driftVel, inarray, outarray,
+    m_advObject->Advect(inarray.size(), m_fields, m_advVel, inarray, outarray,
                         time);
 
     // Put advection term on the right hand side.
