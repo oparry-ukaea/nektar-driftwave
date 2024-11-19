@@ -28,6 +28,7 @@ ADD_EXECUTABLE(DriftWaveSolver
     src/DriftWaveSystem.cpp
     src/RogersRicci.cpp
     src/RogersRicci2D.cpp
+    src/RogersRicci3D.cpp
     )
 
 # Add target link libraries.

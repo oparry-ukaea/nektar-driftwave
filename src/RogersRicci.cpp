@@ -102,6 +102,9 @@ RogersRicci::RogersRicci(const LibUtilities::SessionReaderSharedPtr &session,
 
 void RogersRicci::v_InitObject(bool DeclareField)
 {
+    WARNINGL0(GetNumExpModes() > 1,
+              "Something in RogersRicci eqn sys fails with NUMMODES<2...");
+
     AdvectionSystem::v_InitObject(DeclareField);
 
     // Store mesh dimension for easy retrieval later.
