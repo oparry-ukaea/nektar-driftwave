@@ -137,8 +137,12 @@ void RogersRicci3D::ExplicitTimeInt(
     // // Add parallel velocity to advection
     // Vmath::Vcopy(m_npts, ue, 1, m_driftVel[2], 1);
 
+    // First compute drift advection terms
     advObj_vdrift->Advect(inarray.size(), m_fields, m_driftVel, inarray,
                           outarray, time);
+    Vmath::Smul(m_npts, -40.0, n_out, 1, n_out, 1);
+    Vmath::Smul(m_npts, -40.0, T_e_out, 1, T_e_out, 1);
+    Vmath::Smul(m_npts, -40.0, w_out, 1, w_out, 1);
 
     // Put advection term on the right hand side.
     const NekDouble rho_s0 = 1.2e-2;
@@ -153,10 +157,9 @@ void RogersRicci3D::ExplicitTimeInt(
     {
         NekDouble et = exp(3 - phi[i] / sqrt(T_e[i] * T_e[i] + 1e-4));
         NekDouble st = 0.03 * (1.0 - tanh((rho_s0 * m_r[i] - r_s) / L_s));
-        n_out[i]     = -40 * n_out[i] - 1.0 / 24.0 * et * n[i] + st;
-        T_e_out[i] =
-            -40 * T_e_out[i] - 1.0 / 36.0 * (1.71 * et - 0.71) * T_e[i] + st;
-        w_out[i] = -40 * w_out[i] + 1.0 / 24.0 * (1 - et);
+        n_out[i]     = n_out[i] - 1.0 / 24.0 * et * n[i] + st;
+        T_e_out[i] = T_e_out[i] - 1.0 / 36.0 * (1.71 * et - 0.71) * T_e[i] + st;
+        w_out[i]   = w_out[i] + 1.0 / 24.0 * (1 - et);
     }
 }
 } // namespace Nektar
