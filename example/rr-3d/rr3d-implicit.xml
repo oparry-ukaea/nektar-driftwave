@@ -47,21 +47,21 @@
                 <D VAR="n"   VALUE="1e-4" />
                 <D VAR="T_e" VALUE="1e-4" />
                 <D VAR="w"   VALUE="0" />
-                <D VAR="u_e" VALUE="ue_scale*(2*(z-zmin)/zsize-1)" />
+                <N VAR="u_e" VALUE="0" />
                 <D VAR="phi" VALUE="0.03" />
             </REGION>
             <REGION REF="1">
                 <N VAR="n" USERDEFINEDTYPE="None" VALUE="0" />`
                 <N VAR="T_e" USERDEFINEDTYPE="None" VALUE="0" />
                 <N VAR="w" USERDEFINEDTYPE="None" VALUE="0" />
-                <D VAR="u_e" VALUE="ue_scale*(2*(z-zmin)/zsize-1)" />
+                <N VAR="u_e" USERDEFINEDTYPE="None" VALUE="0" />
                 <N VAR="phi" VALUE="0" />
             </REGION>
             <REGION REF="2">
                 <N VAR="n" USERDEFINEDTYPE="None" VALUE="0" />
                 <N VAR="T_e" USERDEFINEDTYPE="None" VALUE="0" />
                 <N VAR="w" USERDEFINEDTYPE="None" VALUE="0" />
-                <D VAR="u_e" VALUE="ue_scale*(2*(z-zmin)/zsize-1)" />
+                <N VAR="u_e" USERDEFINEDTYPE="None" VALUE="0" />
                 <N VAR="phi" VALUE="0" />
             </REGION>
         </BOUNDARYCONDITIONS>

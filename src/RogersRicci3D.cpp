@@ -181,8 +181,16 @@ void RogersRicci3D::ExplicitTimeInt(
                           outarray, time);
     Vmath::Smul(m_npts, -40.0, n_out, 1, n_out, 1);
     Vmath::Smul(m_npts, -40.0, T_e_out, 1, T_e_out, 1);
-    Vmath::Smul(m_npts, -40.0, ue_out, 1, ue_out, 1);
+    Vmath::Smul(m_npts, -40.0 / 2.0, ue_out, 1, ue_out, 1);
     Vmath::Smul(m_npts, -40.0, w_out, 1, w_out, 1);
+
+    // Copy ue phys vals into class-level storage to make callback funcs work
+    Vmath::Vcopy(m_npts, ue, 1, this->ue_vals[2], 1);
+    // Compute ue advection terms for n, T, ue itself; add to outarray
+    advObj_ue->Advect(3, m_fields, this->ue_vals, inarray, adv_result, time);
+    Vmath::Vadd(m_npts, n_out, 1, adv_result[0], 1, n_out, 1);
+    Vmath::Vadd(m_npts, T_e_out, 1, adv_result[1], 1, T_e_out, 1);
+    Vmath::Vadd(m_npts, ue_out, 1, adv_result[2], 1, ue_out, 1);
 
     // Put advection term on the right hand side.
     const NekDouble rho_s0 = 1.2e-2;
