@@ -29,7 +29,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 //
-// Description: Unsteady driftwave solve routines
+// Description: Equation system for the 3D Rogers & Ricci model.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
